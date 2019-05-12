@@ -15,7 +15,7 @@ public class Planet : MonoBehaviour
     public GameObject SpawnEffect;
     public GameObject Selection;
     public List<HexCell> Cities;
-    public float ExpansionTimer = 5f;
+    public float ExpansionTimer = 3f;
 
     void Start()
     {
@@ -122,6 +122,9 @@ public class Planet : MonoBehaviour
         Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
         Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
         Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
+        Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
+        Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
+        Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
 
         NorthPole.RandomAreaSet(EHexState.Ice, 20f, 0.3f);
         SouthPole.RandomAreaSet(EHexState.Ice, 20f, 0.3f);
@@ -159,8 +162,12 @@ public class Planet : MonoBehaviour
         Cities.Clear();
     }
 
-    public static void ExitGame()
+    public void ExitGame()
     {
-        Application.Quit();
+    #if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+    #else
+        Application.Quit ();
+    #endif
     }
 }
