@@ -12,7 +12,10 @@ public class Planet : MonoBehaviour
     HexCell NorthPole, SouthPole;
     public Material OceanMaterial, SeaMaterial, IceMaterial, FlatlandMaterial, DesertMaterial, TundraMaterial, MountainsMaterial, RainforestMaterial;
     public GameObject City;
-    public SelectionGizmo Selection;
+    public GameObject SpawnEffect;
+    public GameObject Selection;
+    public List<HexCell> Cities;
+    public float ExpansionTimer = 5f;
 
     void Start()
     {
@@ -63,6 +66,7 @@ public class Planet : MonoBehaviour
         Equator.Add(Cells.Where(obj => obj.name == "Field.1913").SingleOrDefault());
 
         Generate();
+
     }
 
     // Update is called once per frame
@@ -75,6 +79,8 @@ public class Planet : MonoBehaviour
         }
 
         transform.Rotate(-0.5f * Vector3.up * Time.deltaTime);
+        
+        
     }
 
     void Generate()
@@ -106,12 +112,24 @@ public class Planet : MonoBehaviour
           foreach (HexCell hex in Equator)
           { hex.RandomAreaSetOnLand(EHexState.Rainforest, 4.0f, 0.5f); }
 
+        var Land = Cells.FindAll(
+            delegate (HexCell cell) {
+                if (cell.State == EHexState.Flatland)
+                return true;
+                return false;
+            });
+
+        Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
+        Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
+        Land[Random.Range(0, Land.Count)].RandomAreaSetOnLand(EHexState.Mountains, 0.4f, 0.7f);
 
         NorthPole.RandomAreaSet(EHexState.Ice, 20f, 0.3f);
         SouthPole.RandomAreaSet(EHexState.Ice, 20f, 0.3f);
 
         NorthPole.RandomAreaSetOnLandNotIce(EHexState.Tundra, 40f, 0.5f);
         SouthPole.RandomAreaSetOnLandNotIce(EHexState.Tundra, 40f, 0.5f);
+
+ 
 
         foreach (HexCell hex in Cells)
         { if (hex.GetComponent<MeshRenderer>().material == TundraMaterial) hex.State = EHexState.Tundra; }
@@ -125,6 +143,24 @@ public class Planet : MonoBehaviour
     {
         foreach (HexCell hex in Cells)
         { hex.Reset(); }
+        Cities.Clear();
 
+    }
+
+    public void Regenerate() {
+        Reset();
+        Generate();
+    }
+
+    public void RemoveTowns()
+    {
+        foreach (HexCell hex in Cells)
+        { hex.RemoveTowns(); }
+        Cities.Clear();
+    }
+
+    public static void ExitGame()
+    {
+        Application.Quit();
     }
 }

@@ -81,14 +81,14 @@ public class CameraController : MonoBehaviour {
 
         rot.x = ClampAngle(rot.x, -80f, 80f);
 
-        scale.x = Mathf.Clamp(scale.x, 0.25f, 1f);
-        scale.y = Mathf.Clamp(scale.y, 0.25f, 1f);
-        scale.z = Mathf.Clamp(scale.z, 0.25f, 1f);
+        scale.x = Mathf.Clamp(scale.x, 0.2f, 1f);
+        scale.y = Mathf.Clamp(scale.y, 0.2f, 1f);
+        scale.z = Mathf.Clamp(scale.z, 0.2f, 1f);
 
         transform.localScale = scale;
         transform.localEulerAngles = rot;
 
-        DOF.focusDistance.value = scale.x * 3.3334f - 0.3334f;
+        DOF.focusDistance.value = scale.x * 3.4f - 0.4f;
 
         
 

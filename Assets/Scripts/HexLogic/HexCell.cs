@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.HexLogic;
+using System.Threading;
 
 //represents a single hexagonal field on a planet
 public class HexCell : MonoBehaviour
@@ -14,6 +15,8 @@ public class HexCell : MonoBehaviour
     List<HexCell> Neighbors;
     Planet Planet;
     public EHexState State { get; set; }
+    GameObject City;
+    float ExpansionTimer;
 
     #region IPointerClickHandler implementation
     private void OnMouseExit()
@@ -52,12 +55,22 @@ public class HexCell : MonoBehaviour
             .Where(o => o.tag == "HexCell")
             .Select(c => c.gameObject.GetComponent<HexCell>())
             .ToList();
+        City = null;
+
+        ExpansionTimer = Planet.ExpansionTimer;
 
     }
 
     void Update()
     {
         Planet.Selection.transform.rotation = Planet.Selection.transform.rotation * Quaternion.Euler(0, 0.01f * Time.time, 0);
+        if (City != null) {
+            ExpansionTimer = ExpansionTimer - Time.deltaTime;
+            if (ExpansionTimer < 0)
+            {
+                ExpandCity();
+            }
+        }
     }
 
         public void RandomAreaSet(EHexState biome, float chanceForNeighbor, float falloff)
@@ -195,17 +208,98 @@ public class HexCell : MonoBehaviour
     {
         State = EHexState.Ocean;
         UpdateMaterial();
+        RemoveTowns();
+    }
+
+    public void RemoveTowns()
+    {
+        var children = new List<GameObject>();
+        foreach (Transform child in transform) children.Add(child.gameObject);
+        children.ForEach(child => Destroy(child));
+        City = null;
+        Planet.Cities.Remove(this);
 
     }
 
     private void FoundCity()
     {
-        GameObject GO = Instantiate(Planet.City);
+        
+        if (City == null && State != EHexState.Ocean && State != EHexState.Sea) {
 
-        GO.transform.parent = this.transform;
-        GO.transform.position = this.transform.position;
-        Quaternion rotation = Quaternion.LookRotation(this.transform.position - new Vector3(0, 0, 0), Vector3.up);
-        GO.transform.rotation = rotation;
+            GameObject GO = Instantiate(Planet.City);
+
+            GO.transform.parent = this.transform;
+            GO.transform.position = this.transform.position*0.9f;
+            GO.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f) * 0.004f;
+            Quaternion rotation = Quaternion.LookRotation(this.transform.position, new Vector3(Random.Range(-1,1), Random.Range(-1, 1), Random.Range(-1, 1)));
+            GO.transform.rotation = rotation;
+            City = GO;
+            StartCoroutine(GrowCity());
+            Planet.Cities.Add(this);
+
+
+            GameObject Effect = Instantiate(Planet.SpawnEffect);
+
+            Effect.transform.parent = this.transform;
+            Effect.transform.position = this.transform.position;
+            Effect.transform.rotation = rotation;
+
+            Destroy(Effect, 1f);
+
+            ExpansionTimer = Planet.ExpansionTimer;
+
+        }
+    }
+
+    System.Collections.IEnumerator GrowCity() {
+        float startTime = Time.time;
+
+       // Vector3 start_pos = City.transform.position; //Starting position.
+
+        while (Time.time - startTime < 0.5) //the movement takes exactly 1 s. regardless of framerate
+        {
+
+            City.transform.position += this.transform.position * Time.deltaTime * 0.21f;
+            City.transform.localScale += new Vector3(1.25f, 1.25f, 1.25f) * Time.deltaTime *0.004f;
+            yield return null;
+        }
+        City.transform.position = this.transform.position;
+        City.transform.localScale = new Vector3(1, 1, 1) * 0.004f;
+        Planet.Selection.transform.position = new Vector3(0, -100, 0);
+    }
+
+    public void ExpandCity()
+    {
+        var FreeNeighbors = Neighbors.Where(obj => obj.City == null).ToArray();
+        if (FreeNeighbors.Count() != 0) {
+
+            var PlaceToBuild = FreeNeighbors[Random.Range(0, FreeNeighbors.Count())];
+            var Lottery = Random.Range(0f, 1f);
+
+            switch (PlaceToBuild.State)
+            {
+                case EHexState.Flatland:
+                    if (Lottery >= 0.1f) PlaceToBuild.FoundCity();
+                    break;
+                case EHexState.Rainforest:
+                    if (Lottery >= 0.5f) PlaceToBuild.FoundCity();
+                    break;
+                case EHexState.Tundra:
+                    if (Lottery >= 0.8f) PlaceToBuild.FoundCity();
+                    break;
+                case EHexState.Mountains:
+                    if (Lottery >= 0.15f) PlaceToBuild.FoundCity();
+                    break;
+                case EHexState.Desert:
+                    if (Lottery >= 0.9f) PlaceToBuild.FoundCity();
+                    break;
+                case EHexState.Ice:
+                    if (Lottery >= 0.95f) PlaceToBuild.FoundCity();
+                    break;
+            }
+            ExpansionTimer = Planet.ExpansionTimer;
+        }
+
     }
 
     /*
