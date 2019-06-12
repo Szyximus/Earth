@@ -50,13 +50,29 @@ public class CameraController : MonoBehaviour {
 
         float scroll = Input.GetAxis("Mouse ScrollWheel");
 
+
         zoomVel -= scroll * zoomSpeed * zoom * 0.005f;
-     
+
+        if (Input.touchCount == 2)
+        {
+            zoomVel -= zoomSpeed * Input.GetAxis("Mouse Y") * (Input.GetAxis("Vertical") + 1) * 0.001f;
+        }
+
+        if (Input.touchCount == 1)
+        {
+            var touch = Input.touches[0];
+            if (touch.phase == TouchPhase.Moved)
+            {
+                rotVel[0] += panSpeed * touch.deltaPosition.x * 0.004f;
+                rotVel[1] -= panSpeed * touch.deltaPosition.y * 0.004f;
+            }
+        }
+
 
         if (Input.GetButton("Fire1"))
         {
             rotVel[0] += panSpeed * Input.GetAxis("Mouse X") * (Input.GetAxis("Horizontal") + 1) * 0.03f;
-            rotVel[1] -= panSpeed * Input.GetAxis("Mouse Y") * (Input.GetAxis("Vertical")+1) * 0.03f;
+            rotVel[1] -= panSpeed * Input.GetAxis("Mouse Y") * (Input.GetAxis("Vertical") + 1) * 0.03f;
         }
 
 

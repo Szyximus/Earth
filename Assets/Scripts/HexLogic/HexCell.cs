@@ -13,10 +13,16 @@ public class HexCell : MonoBehaviour
 {
     //public GameObject ObjectInCell;
     List<HexCell> Neighbors;
+    List<HexCell> Children;
+    HexCell Parent;
     Planet Planet;
     public EHexState State { get; set; }
     GameObject City;
     float ExpansionTimer;
+    float UpgradeTimer;
+    int CityLevel;
+
+
 
     #region IPointerClickHandler implementation
     private void OnMouseExit()
@@ -56,19 +62,52 @@ public class HexCell : MonoBehaviour
             .Select(c => c.gameObject.GetComponent<HexCell>())
             .ToList();
         City = null;
+        Children = null;
+        Parent = null;
 
         ExpansionTimer = Planet.ExpansionTimer;
+        UpgradeTimer = Planet.UpgradeTimer;
+        CityLevel = 0;
 
     }
 
     void Update()
     {
         Planet.Selection.transform.rotation = Planet.Selection.transform.rotation * Quaternion.Euler(0, 0.01f * Time.time, 0);
-        if (City != null) {
+        if (City != null && Parent == null)
+        {
             ExpansionTimer = ExpansionTimer - Time.deltaTime;
             if (ExpansionTimer < 0)
             {
                 ExpandCity();
+            }
+        }
+        if (City != null && CityLevel != 3)
+        {
+            switch (State)
+            {
+                case EHexState.Flatland:
+                    UpgradeTimer = UpgradeTimer - Time.deltaTime;
+                    break;
+                case EHexState.Rainforest:
+                    UpgradeTimer = UpgradeTimer - Time.deltaTime * 0.5f;
+                    break;
+                case EHexState.Tundra:
+                    UpgradeTimer = UpgradeTimer - Time.deltaTime * 0.2f;
+                    break;
+                case EHexState.Mountains:
+                    UpgradeTimer = UpgradeTimer - Time.deltaTime * 0.25f;
+                    break;
+                case EHexState.Desert:
+                    UpgradeTimer = UpgradeTimer - Time.deltaTime * 0.1f;
+                    break;
+                case EHexState.Ice:
+                    UpgradeTimer = UpgradeTimer - Time.deltaTime * 0.05f;
+                    break;
+            }
+            if (UpgradeTimer < 0)
+            {
+                UpgradeCity();
             }
         }
     }
@@ -218,6 +257,11 @@ public class HexCell : MonoBehaviour
         children.ForEach(child => Destroy(child));
         City = null;
         Planet.Cities.Remove(this);
+        CityLevel = 0;
+        Parent = null;
+        Children = null;
+        UpgradeTimer = Planet.UpgradeTimer;
+        ExpansionTimer = Planet.ExpansionTimer;
 
     }
 
@@ -226,7 +270,7 @@ public class HexCell : MonoBehaviour
         
         if (City == null && State != EHexState.Ocean && State != EHexState.Sea) {
 
-            GameObject GO = Instantiate(Planet.City);
+            GameObject GO = Instantiate(Planet.Huts);
 
             GO.transform.parent = this.transform;
             GO.transform.position = this.transform.position*0.9f;
@@ -247,7 +291,100 @@ public class HexCell : MonoBehaviour
             Destroy(Effect, 1f);
 
             ExpansionTimer = Planet.ExpansionTimer;
+            Parent = null;
+            Children = new List<HexCell>();
+            CityLevel = 1;
+            UpgradeTimer = Planet.UpgradeTimer;
 
+        }
+    }
+
+
+    private void FoundChildCity(HexCell parent)
+    {
+
+        if (City == null && State != EHexState.Ocean && State != EHexState.Sea)
+        {
+
+            GameObject GO = Instantiate(Planet.Huts);
+
+            GO.transform.parent = this.transform;
+            GO.transform.position = this.transform.position * 0.9f;
+            GO.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f) * 0.004f;
+            Quaternion rotation = Quaternion.LookRotation(this.transform.position, new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), Random.Range(-1, 1)));
+            GO.transform.rotation = rotation;
+            City = GO;
+            StartCoroutine(GrowCity());
+            Planet.Cities.Add(this);
+
+
+            GameObject Effect = Instantiate(Planet.SpawnEffect);
+
+            Effect.transform.parent = this.transform;
+            Effect.transform.position = this.transform.position;
+            Effect.transform.rotation = rotation;
+
+            Destroy(Effect, 1f);
+
+            ExpansionTimer = -1;
+            UpgradeTimer = Planet.UpgradeTimer;
+
+            Parent = parent;
+            CityLevel = 1;
+
+        }
+    }
+
+    private void UpgradeCity()
+    {
+        if (CityLevel == 2)
+        {
+            Destroy(City);
+            GameObject GO = Instantiate(Planet.Blocks);
+
+            GO.transform.parent = this.transform;
+            GO.transform.position = this.transform.position * 0.9f;
+            GO.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f) * 0.004f;
+            Quaternion rotation = Quaternion.LookRotation(this.transform.position, new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), Random.Range(-1, 1)));
+            GO.transform.rotation = rotation;
+            City = GO;
+            StartCoroutine(GrowCity());
+
+            GameObject Effect = Instantiate(Planet.SpawnEffect);
+
+            Effect.transform.parent = this.transform;
+            Effect.transform.position = this.transform.position;
+            Effect.transform.rotation = rotation;
+
+
+            Destroy(Effect, 1f);
+            CityLevel = 3;
+
+            UpgradeTimer = Planet.UpgradeTimer;
+        }
+        else if (CityLevel == 1)
+        {
+            Destroy(City);
+            GameObject GO = Instantiate(Planet.Houses);
+
+            GO.transform.parent = this.transform;
+            GO.transform.position = this.transform.position * 0.9f;
+            GO.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f) * 0.004f;
+            Quaternion rotation = Quaternion.LookRotation(this.transform.position, new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), Random.Range(-1, 1)));
+            GO.transform.rotation = rotation;
+            City = GO;
+            StartCoroutine(GrowCity());
+
+            GameObject Effect = Instantiate(Planet.SpawnEffect);
+
+            Effect.transform.parent = this.transform;
+            Effect.transform.position = this.transform.position;
+            Effect.transform.rotation = rotation;
+
+            Destroy(Effect, 1f);
+            CityLevel = 2;
+
+            UpgradeTimer = Planet.UpgradeTimer;
         }
     }
 
@@ -268,9 +405,25 @@ public class HexCell : MonoBehaviour
         Planet.Selection.transform.position = new Vector3(0, -100, 0);
     }
 
+
     public void ExpandCity()
     {
-        var FreeNeighbors = Neighbors.Where(obj => obj.City == null).ToArray();
+        List<HexCell> FreeNeighbors = new List<HexCell>();
+        foreach (HexCell Cell in Neighbors)
+        {
+            if (Cell.City == null) FreeNeighbors.Add(Cell);
+        }
+
+        if (Children != null)
+        {
+            foreach (HexCell City in Children)
+            {
+                foreach (HexCell FreeLand in City.Neighbors.Where(obj => obj.City == null).ToList())
+                {
+                    FreeNeighbors.Add(FreeLand);
+                }
+            }
+        }
         if (FreeNeighbors.Count() != 0) {
 
             var PlaceToBuild = FreeNeighbors[Random.Range(0, FreeNeighbors.Count())];
@@ -279,113 +432,50 @@ public class HexCell : MonoBehaviour
             switch (PlaceToBuild.State)
             {
                 case EHexState.Flatland:
-                    if (Lottery >= 0.1f) PlaceToBuild.FoundCity();
+                    if (Lottery >= 0.1f)
+                    {
+                        PlaceToBuild.FoundChildCity(this);
+                        Children.Add(PlaceToBuild);
+                    }
                     break;
                 case EHexState.Rainforest:
-                    if (Lottery >= 0.5f) PlaceToBuild.FoundCity();
+                    if (Lottery >= 0.5f)
+                    {
+                        PlaceToBuild.FoundChildCity(this);
+                        Children.Add(PlaceToBuild);
+                    }
                     break;
                 case EHexState.Tundra:
-                    if (Lottery >= 0.8f) PlaceToBuild.FoundCity();
+                    if (Lottery >= 0.8f)
+                    {
+                        PlaceToBuild.FoundChildCity(this);
+                        Children.Add(PlaceToBuild);
+                    }
                     break;
                 case EHexState.Mountains:
-                    if (Lottery >= 0.15f) PlaceToBuild.FoundCity();
+                    if (Lottery >= 0.75f)
+                    {
+                        PlaceToBuild.FoundChildCity(this);
+                        Children.Add(PlaceToBuild);
+                    }
                     break;
                 case EHexState.Desert:
-                    if (Lottery >= 0.9f) PlaceToBuild.FoundCity();
+                    if (Lottery >= 0.9f)
+                    {
+                        PlaceToBuild.FoundChildCity(this);
+                        Children.Add(PlaceToBuild);
+                    }
                     break;
                 case EHexState.Ice:
-                    if (Lottery >= 0.95f) PlaceToBuild.FoundCity();
+                    if (Lottery >= 0.95f)
+                    {
+                        PlaceToBuild.FoundChildCity(this);
+                        Children.Add(PlaceToBuild);
+                    }
                     break;
             }
             ExpansionTimer = Planet.ExpansionTimer;
         }
 
     }
-
-    /*
-    public void AssignObject(GameObject objectInCell)
-    {
-        this.ObjectInCell = objectInCell;
-    }
-
-    public void ClearObject()
-    {
-        ObjectInCell = null;
-    }
-
-    public bool IsEmpty()
-    {
-        if (ObjectInCell == null) return true;
-        return false;
-    }
-
-    public bool IsDiscoveredBy(Player player)
-    {
-        if (discoveredBy.Contains(player))
-        {
-            return true;
-        }
-        return false;
-    }
-
-    public void Discover(Ownable owned)
-    {
-        visibleByList.Add(owned);
-        discoveredBy.Add(owned.GetOwner());
-
-        State = EHexState.Visible;
-        if (!IsEmpty()) ObjectInCell.SetActive(true);
-        gameObject.GetComponentInChildren<MeshRenderer>().material = VisibleMaterial;
-
-    }
-
-    public void Hide(Ownable owned)
-    {
-        visibleByList.Remove(owned);
-        if (visibleByList.Count == 0)
-        {
-            State = EHexState.Hidden;
-            gameObject.GetComponentInChildren<MeshRenderer>().material = HiddenMaterial;
-
-            if (!IsEmpty())
-            {
-                if(ObjectInCell.tag != "Star" && ObjectInCell.tag != "Planet")
-                    ObjectInCell.SetActive(false);
-                if(ObjectInCell.tag == "Star")
-                    gameObject.GetComponentInChildren<MeshRenderer>().material = VisibleMaterial;
-            }
-        }
-    }
-
-    public void Hide()
-    {
-        visibleByList.Clear();
-        State = EHexState.Hidden;
-        gameObject.GetComponentInChildren<MeshRenderer>().material = HiddenMaterial;
-
-        if (!IsEmpty())
-        {
-            if (ObjectInCell.tag != "Star" && ObjectInCell.tag != "Planet")
-                ObjectInCell.SetActive(false);
-            if (ObjectInCell.tag == "Star")
-                gameObject.GetComponentInChildren<MeshRenderer>().material = VisibleMaterial;
-        }
-    }
-
-    public void UnDiscover()
-    {
-        visibleByList.Clear();
-        State = EHexState.Undiscovered;
-
-        if (!IsEmpty() && ObjectInCell.tag != "Star")
-        {
-            ObjectInCell.SetActive(false);
-        }
-
-        gameObject.GetComponentInChildren<MeshRenderer>().material = UndiscoveredMaterial;
-        if (!IsEmpty() && ObjectInCell.tag == "Star")
-        {
-            gameObject.GetComponentInChildren<MeshRenderer>().material = VisibleMaterial;
-        }
-    } */
 }

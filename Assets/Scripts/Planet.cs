@@ -11,11 +11,14 @@ public class Planet : MonoBehaviour
     // Start is called before the first frame update
     HexCell NorthPole, SouthPole;
     public Material OceanMaterial, SeaMaterial, IceMaterial, FlatlandMaterial, DesertMaterial, TundraMaterial, MountainsMaterial, RainforestMaterial;
-    public GameObject City;
+    public GameObject Huts;
+    public GameObject Houses;
+    public GameObject Blocks;
     public GameObject SpawnEffect;
     public GameObject Selection;
     public List<HexCell> Cities;
     public float ExpansionTimer = 3f;
+    public float UpgradeTimer = 5f;
 
     void Start()
     {
